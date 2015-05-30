@@ -10,7 +10,7 @@
 var score = 0;
 
 var updateScore = function(newScore) {
-    $('#scoreBoard').text("Current Score: " + score);
+    $('#scoreBoard').text('Current Score: ' + score);
 };
 
 /**
