@@ -1,49 +1,125 @@
-// TODO: add sound
 // TODO: add score board
-// TODO: derive enemies and players from Entity common class, put all entities in an entity array?
-// TODO: at advanced levels, bugs in some rows go in reverse
-// TODO: allow users to specify png files, add their name, two person game
-// TODO: have a timer for a time limit, show game over
 // TODO: allow user to start a new game
-// TODO: keep track of levels, make game harder as we progress
+// TODO: keep track of levels, make game harder as we progress, but user scores more points
+// TODO: at advanced levels, bugs in some rows go in reverse
+// TODO: have a timer for a time limit, show game over
+// TODO: allow users to specify png files, add their name, two person game
 // TODO: don't allow player to just sit in initial spot or one spot for too long
 // TODO: add a demo mode
-
+// TODO: add sound
 
 /**
- * Enemies our player must avoid
- * @param startingRow
- * @param rate
+ * This is the constructor for the base class for all entities in the game.  Enemies and
+ * the player are derived from Entity.
+ *
+ * @param sprite: The image used to graphically represent this entity
+ * @param row: The row where the entity should start out
+ * @param col: The column where the entity should start out. A value less than zero indicates off
+ * screen to the left.
  * @constructor
  */
-var Enemy = function(startingRow, rate) {
-    // The image/sprite for our enemies, this uses
+var Entity = function(sprite, row, col){
+    // The image/sprite for our entities, this uses
     // a helper we've provided to easily load images
-    this.sprite = 'images/enemy-bug.png';
-    // TODO: perhaps delete the following line
-    //var c = document.getElementsByTagName('canvas');
-    this.setRow(startingRow);
-    this.setRate(rate);
-    this.x = -101;
+    this.sprite = sprite;
+    this.setRow(row);   // updates our y value
+    this.setCol(col);   // updates our x value
 };
 
 /**
- * Update the enemy's row with the given value
- * @param row
+ * Draw the entity on the screen, required method for game
  */
-Enemy.prototype.setRow = function (row) {
-    if (row < 2) {
-        row = 2;
-    } else if (row > 4) {
-        row = 4;
+Entity.prototype.render = function() {
+    ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
+};
+
+/**
+ * Update an entity's row with the given value.  This controls the y value.
+ * If an entity tries to move off the top of the map, that is interpreted as
+ * successfully traversing the game and points are scored.
+ *
+ * @param row: 0 to max rows in game.
+ */
+Entity.prototype.setRow = function (row) {
+    if (row < 0) {
+        row = 0;
+    } else if (row > 5) {
+        // TODO: score points, you made it across
+        row = 0;
     }
     this.row = row;
-    this.y = 225 - (this.row - 2) * 83;
+    this.y = 403 - this.row * 83;
 };
+
+/**
+ * Are we in a row that enemies can be in?
+ * @returns {boolean}
+ */
+Entity.prototype.inEnemyRow = function () {
+    return ((this.row > 1) && (this.row < 5));
+};
+
+/**
+ * Update an entity's column with the given value.  This sets the x value.
+ * The x value is also updated by the setX function if finer control is needed.
+ *
+ * @param col: -1 to max columns in game. -1 is off screen to the left.
+ */
+Entity.prototype.setCol = function (col) {
+    if (col < 0) {
+        col = -1;
+    } else if (col > 4) {
+        col = 4;
+    }
+    this.col = col;
+    this.x = this.col * 101;
+};
+
+Entity.prototype.moveUp = function() {
+    this.setRow(this.row + 1);
+};
+
+Entity.prototype.moveDown = function() {
+    this.setRow(this.row - 1);
+};
+
+Entity.prototype.moveLeft = function () {
+    // don't allow movement off the screen with this function
+    // col === -1 is legal in other contexts and is allowed by setCol
+    if (this.col > 0) {
+        this.setCol(this.col - 1);
+    }
+};
+
+Entity.prototype.moveRight = function () {
+    this.setCol(this.col + 1);
+};
+
+/**
+ * Raw ability to set the x value for motion purposes, no error checking
+ * @param x: the new x value for the Entity
+ */
+Entity.prototype.setX = function(x) {
+    this.x = x;
+}
+
+/**
+ * Enemies our player must avoid. They are derived from Entity.
+ * @param sprite: The image used to graphically represent this entity
+ * @param startingRow: The row where we will start out
+ * @constructor
+ */
+var Enemy = function(sprite, startingRow) {
+    Entity.call(this, sprite, startingRow, -1);
+    this.setRate(Math.random() * 40 + 20);
+};
+Enemy.prototype = Object.create(Entity.prototype);
+Enemy.prototype.constructor = Enemy;
 
 /**
  * Update the enemy's rate with the given value.
- * @param rate
+ * @param rate: The number of pixels we should move with each time slice, limited to the range
+ * 20 to 60.
  */
 Enemy.prototype.setRate = function (rate) {
     if (rate < 20) {
@@ -59,100 +135,50 @@ Enemy.prototype.setRate = function (rate) {
  * @param dt a time delta between ticks
  */
 Enemy.prototype.update = function(dt) {
-    // You should multiply any movement by the dt parameter
-    // which will ensure the game runs at the same speed for
-    // all computers.
-    if (this.x < 505) {
-        this.x += (this.rate * dt);
-    } else {
-        this.x = -101;
-        this.rate = Math.random() * 40 + 20;
+    this.setX(this.x + this.rate * dt);
+    if (this.x > 505) {
+        // when we run off the right side of the game, start over with a random rate and row
+        this.setRate(Math.random() * 40 + 20);
         this.setRow(Math.min(Math.floor(Math.random() * 3) + 2, 4));
+        this.setCol(-1);
     }
 };
 
+
+
+
+
 /**
- * Draw the enemy on the screen, required method for game
+ * Player class represents the player in the game.  It is derived from Entity.
+ * It always starts in row 0 column 2.
+ * @param sprite
+ * @constructor
  */
-Enemy.prototype.render = function() {
-    ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
+var Player = function(sprite) {
+    Entity.call(this, sprite, 0, 2);
 };
+Player.prototype = Object.create(Entity.prototype);
+Player.prototype.constructor = Player;
 
 /**
- * This class requires an update(), render() and a handleInput() method.
+ * Update the player's position, required method for game.
+ * All we do is check for collisions.  The player's position is only updated by
+ * input from the user. (Except when there is a collision.)
+ * TODO: in other modes (drunk?) we could mess with the player's position
  */
-var Player = function() {
-    // Variables applied to each of our instances go here,
-    // we've provided one for you to get started
-
-    // The image/sprite for our enemies, this uses
-    // a helper we've provided to easily load images
-    this.sprite = 'images/char-boy.png';
-
-    //var c = document.getElementsByTagName('canvas');
-    this.x = 202;
-    this.y = 403;
-    this.row = 0;
-};
-
-/**
- * Update the player's position, required method for game
- * @param dt a time delta between ticks
- */
-Player.prototype.update = function(dt) {
-    // TODO: at advanced levels (drunk?) we could mess with the player's position
-    if ((this.row > 1) || (this.row < 5))
-    {
-        // we are in a row where enemy's travel, possibility of a collision
-        for (var i = 0, n = allEnemies.length; i < n; i++) {
-            if (allEnemies[i].row === this.row) {
-                if (Math.abs(allEnemies[i].x - this.x) < 75) {
+Player.prototype.update = function() {
+    if (this.inEnemyRow()) {
+        // we are in a row where enemies travel, possibility of a collision
+        for (var i = 0, n = allEntities.length; i < n; i++) {
+            if ((allEntities[i] !== this) && (allEntities[i].row === this.row)) {
+                // we are in the same row as the other guy, and we are not the other guy
+                if (Math.abs(allEntities[i].x - this.x) < 75) {
                     // collision
-                    this.x = 202;
-                    this.y = 403;
-                    this.row = 0;
+                    this.setRow(0);
+                    this.setCol(2);
                 }
             }
         }
-
-    }
-};
-
-/**
- * Draw the player on the screen, required method for game
- */
-Player.prototype.render = function() {
-    ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
-};
-
-Player.prototype.moveLeft = function () {
-    if (this.x > 100) {
-        this.x -= 101;
-    }
-};
-
-Player.prototype.moveUp = function() {
-    if (this.y > 70) {
-        this.y -= 83;
-        this.row++;
-    } else {
-        // TODO: score points, you made it across
-        this.x = 202;
-        this.y = 403;
-        this.row = 0;
-    }
-};
-
-Player.prototype.moveRight = function () {
-    if (this.x < 304) {
-        this.x += 101;
-    }
-};
-
-Player.prototype.moveDown = function () {
-    if (this.y < 403) {
-        this.y += 83;
-        this.row--;
     }
 };
 
@@ -161,7 +187,6 @@ Player.prototype.moveDown = function () {
  * @param inputKey
  */
 Player.prototype.handleInput = function(inputKey) {
-    // TODO: remove hard-coded step sizes
     if (inputKey === 'left') {
         this.moveLeft();
     } else if (inputKey === 'up') {
@@ -170,23 +195,32 @@ Player.prototype.handleInput = function(inputKey) {
         this.moveRight();
     } else if (inputKey === 'down') {
         this.moveDown();
-    } else {
-        // TODO: use character to show confusion
     }
     ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
 };
 
 
-// Now instantiate objects.
-// Place all enemy objects in an array called allEnemies
-var allEnemies = [
-    new Enemy(2, Math.random() * 40 + 20),
-    new Enemy(3, Math.random() * 40 + 20),
-    new Enemy(4, Math.random() * 40 + 20)
-];
+
+
+/*
+ * Create entities and wire it all together
+ */
+
 
 // Place the player object in a variable called player
-var player = new Player();
+// We only have to provide the file for the sprite
+var player = new Player('images/char-boy.png');
+
+// Now instantiate objects.
+// Place all enemy objects and player in an array called allEntities
+// Start with one enemy in each row
+// For the enemies, specify sprite file and starting row
+var allEntities = [
+    new Enemy('images/enemy-bug.png', 2),
+    new Enemy('images/enemy-bug.png', 3),
+    new Enemy('images/enemy-bug.png', 4),
+    player
+];
 
 /**
  * This listens for key presses and sends the keys to the
