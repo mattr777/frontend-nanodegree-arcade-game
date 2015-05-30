@@ -26,11 +26,39 @@ var Entity = function(sprite, row, col){
     this.setCol(col);   // updates our x value
 };
 
+Entity.prototype.maxRow = 5;
+Entity.prototype.maxCol = 4;
+Entity.prototype.maxX = 505;
+Entity.prototype.rowHeight = 83;
+Entity.prototype.colWidth = 101;
+Entity.prototype.collisionDistance = 75;    // the x distance defined for a collision
+Entity.prototype.minRate = 20;
+Entity.prototype.maxRate = 80;
+Entity.prototype.minEnemyRow = 2;
+Entity.prototype.maxEnemyRow = 4;
+
 /**
  * Draw the entity on the screen, required method for game
  */
 Entity.prototype.render = function() {
     ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
+};
+
+/**
+ * Get a random rate between the min and max
+ * @returns {number}
+ */
+Entity.prototype.getRandomRate = function() {
+    return Math.random() * (Entity.prototype.maxRate - Entity.prototype.minRate) + Entity.prototype.minRate;
+};
+
+/**
+ * Get a random enemy row between the min and max
+ * @returns {number}
+ */
+Entity.prototype.getRandomEnemyRow = function() {
+    var range = Entity.prototype.maxEnemyRow - Entity.prototype.minEnemyRow + 1;
+    return Math.min(Math.floor(Math.random() * range) + Entity.prototype.minEnemyRow, Entity.prototype.maxEnemyRow);
 };
 
 /**
@@ -43,12 +71,12 @@ Entity.prototype.render = function() {
 Entity.prototype.setRow = function (row) {
     if (row < 0) {
         row = 0;
-    } else if (row > 5) {
+    } else if (row > Entity.prototype.maxRow) {
         // TODO: score points, you made it across
         row = 0;
     }
     this.row = row;
-    this.y = 403 - this.row * 83;
+    this.y = 403 - this.row * Entity.prototype.rowHeight;
 };
 
 /**
@@ -56,7 +84,7 @@ Entity.prototype.setRow = function (row) {
  * @returns {boolean}
  */
 Entity.prototype.inEnemyRow = function () {
-    return ((this.row > 1) && (this.row < 5));
+    return ((this.row > 1) && (this.row < Entity.prototype.maxRow));
 };
 
 /**
@@ -68,11 +96,11 @@ Entity.prototype.inEnemyRow = function () {
 Entity.prototype.setCol = function (col) {
     if (col < 0) {
         col = -1;
-    } else if (col > 4) {
-        col = 4;
+    } else if (col > Entity.prototype.maxCol) {
+        col = Entity.prototype.maxCol;
     }
     this.col = col;
-    this.x = this.col * 101;
+    this.x = this.col * Entity.prototype.colWidth;
 };
 
 Entity.prototype.moveUp = function() {
@@ -101,7 +129,7 @@ Entity.prototype.moveRight = function () {
  */
 Entity.prototype.setX = function(x) {
     this.x = x;
-}
+};
 
 /**
  * Enemies our player must avoid. They are derived from Entity.
@@ -111,7 +139,7 @@ Entity.prototype.setX = function(x) {
  */
 var Enemy = function(sprite, startingRow) {
     Entity.call(this, sprite, startingRow, -1);
-    this.setRate(Math.random() * 40 + 20);
+    this.setRate(Entity.prototype.getRandomRate());
 };
 Enemy.prototype = Object.create(Entity.prototype);
 Enemy.prototype.constructor = Enemy;
@@ -119,13 +147,13 @@ Enemy.prototype.constructor = Enemy;
 /**
  * Update the enemy's rate with the given value.
  * @param rate: The number of pixels we should move with each time slice, limited to the range
- * 20 to 60.
+ * Entity.prototype.minRate to Entity.prototype.maxRate.
  */
 Enemy.prototype.setRate = function (rate) {
-    if (rate < 20) {
-        rate = 20;
-    } else if (rate > 60) {
-        rate = 60;
+    if (rate < Entity.prototype.minRate) {
+        rate = Entity.prototype.minRate;
+    } else if (rate > Entity.prototype.maxRate) {
+        rate = Entity.prototype.maxRate;
     }
     this.rate = rate;
 };
@@ -136,10 +164,10 @@ Enemy.prototype.setRate = function (rate) {
  */
 Enemy.prototype.update = function(dt) {
     this.setX(this.x + this.rate * dt);
-    if (this.x > 505) {
+    if (this.x > Entity.prototype.maxX) {
         // when we run off the right side of the game, start over with a random rate and row
-        this.setRate(Math.random() * 40 + 20);
-        this.setRow(Math.min(Math.floor(Math.random() * 3) + 2, 4));
+        this.setRate(Entity.prototype.getRandomRate());
+        this.setRow(Entity.prototype.getRandomEnemyRow());
         this.setCol(-1);
     }
 };
@@ -172,7 +200,7 @@ Player.prototype.update = function() {
         for (var i = 0, n = allEntities.length; i < n; i++) {
             if ((allEntities[i] !== this) && (allEntities[i].row === this.row)) {
                 // we are in the same row as the other guy, and we are not the other guy
-                if (Math.abs(allEntities[i].x - this.x) < 75) {
+                if (Math.abs(allEntities[i].x - this.x) < Entity.prototype.collisionDistance) {
                     // collision
                     this.setRow(0);
                     this.setCol(2);
