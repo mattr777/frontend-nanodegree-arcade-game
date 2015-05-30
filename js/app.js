@@ -1,4 +1,3 @@
-// TODO: add score board
 // TODO: allow user to start a new game
 // TODO: keep track of levels, make game harder as we progress, but user scores more points
 // TODO: at advanced levels, bugs in some rows go in reverse
@@ -7,6 +6,12 @@
 // TODO: don't allow player to just sit in initial spot or one spot for too long
 // TODO: add a demo mode
 // TODO: add sound
+
+var score = 0;
+
+var updateScore = function(newScore) {
+    $('#scoreBoard').text("Current Score: " + score);
+};
 
 /**
  * This is the constructor for the base class for all entities in the game.  Enemies and
@@ -72,8 +77,9 @@ Entity.prototype.setRow = function (row) {
     if (row < 0) {
         row = 0;
     } else if (row > Entity.prototype.maxRow) {
-        // TODO: score points, you made it across
         row = 0;
+        score++;
+        updateScore(score);
     }
     this.row = row;
     this.y = 403 - this.row * Entity.prototype.rowHeight;
